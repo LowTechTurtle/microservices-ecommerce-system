@@ -1,0 +1,6 @@
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform/
+*.zip
+bootstrap

@@ -1,0 +1,28 @@
+{
+    "products": [
+        {
+            "id": "ABCDEFGHI1",
+            "name": "Sunglasses",
+            "description": "Add a modern touch to your outfits with these sleek aviator sunglasses.",
+            "picture": "/static/img/products/sunglasses.jpg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 19,
+                "nanos": 990000000
+            },
+            "categories": ["accessories"]
+        },
+        {
+            "id": "ABC12345AB",
+            "name": "Watch",
+            "description": "This gold-tone stainless steel watch will work with most of your outfits.",
+            "picture": "/static/img/products/watch.jpg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 109,
+                "nanos": 990000000
+            },
+            "categories": ["accessories"]
+        }
+    ]
+}
