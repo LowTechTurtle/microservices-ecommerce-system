@@ -4,3 +4,4 @@
 .terraform/
 *.zip
 bootstrap
+.env
