@@ -53,6 +53,7 @@ type frontendServer struct {
 	productCatalogLambdaURL string
 	cartServiceLambdaURL    string
 	shippingLambdaURL       string
+	emailServiceLambdaURL   string
 	// checkoutServiceLambdaURL string // TODO: future migration
 	// paymentServiceLambdaURL  string // TODO: future migration
 
@@ -88,6 +89,7 @@ func main() {
 	mustMapEnv(&svc.productCatalogLambdaURL, "PRODUCT_CATALOG_LAMBDA_URL")
 	mustMapEnv(&svc.cartServiceLambdaURL, "CARTSERVICE_LAMBDA_URL")
 	mustMapEnv(&svc.shippingLambdaURL, "SHIPPING_LAMBDA_URL")
+	mustMapEnv(&svc.emailServiceLambdaURL, "EMAIL_SERVICE_URL")
 
 	if os.Getenv("ENABLE_TRACING") == "1" {
 		log.Info("Tracing enabled.")

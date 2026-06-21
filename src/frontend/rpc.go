@@ -280,8 +280,26 @@ func (fe *frontendServer) checkout(ctx context.Context, req *pb.PlaceOrderReques
 	// Xóa giỏ hàng sau khi thanh toán thành công
 	fe.emptyCart(ctx, req.UserId)
 
+	orderID := "MOCK-ORDER-" + trackingID[len(trackingID)-5:]
+	paymentCode := "PAY-" + trackingID[len(trackingID)-5:]
+	totalAmount := "$150.00" // Giả lập tổng tiền cho email
+
+	// Gửi email xác nhận
+	go func() {
+		if fe.emailServiceLambdaURL != "" && req.Email != "" {
+			payload := map[string]string{
+				"email":        req.Email,
+				"order_id":     orderID,
+				"payment_code": paymentCode,
+				"total":        totalAmount,
+			}
+			b, _ := json.Marshal(payload)
+			http.Post(fe.emailServiceLambdaURL, "application/json", bytes.NewBuffer(b))
+		}
+	}()
+
 	return &pb.OrderResult{
-		OrderId:            "MOCK-ORDER-12345",
+		OrderId:            orderID,
 		ShippingTrackingId: trackingID,
 		ShippingCost:       shippingCost,
 		ShippingAddress:    req.Address,
