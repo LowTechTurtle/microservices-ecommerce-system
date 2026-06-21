@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -25,6 +26,9 @@ type platformDetails struct {
 	provider string
 }
 
+//go:embed templates/*.html
+var templatesFS embed.FS
+
 var (
 	frontendMessage  = strings.TrimSpace(os.Getenv("FRONTEND_MESSAGE"))
 	isCymbalBrand    = "true" == strings.ToLower(os.Getenv("CYMBAL_BRANDING"))
@@ -32,7 +36,7 @@ var (
 				Funcs(template.FuncMap{
 			"renderMoney":        renderMoney,
 			"renderCurrencyLogo": renderCurrencyLogo,
-		}).ParseGlob("templates/*.html"))
+		}).ParseFS(templatesFS, "templates/*.html"))
 	plat platformDetails
 )
 
