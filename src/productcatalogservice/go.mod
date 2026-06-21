@@ -9,10 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.13
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.37
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.57.1
-	github.com/golang/protobuf v1.5.4
 	github.com/sirupsen/logrus v1.9.4
-	google.golang.org/grpc v1.69.0-dev
-	google.golang.org/protobuf v1.36.11
 )
 
 require (
@@ -32,8 +29,5 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.10 // indirect
 	github.com/aws/smithy-go v1.24.2 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
-	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 // indirect
 )

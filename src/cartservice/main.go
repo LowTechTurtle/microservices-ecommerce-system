@@ -1,23 +1,18 @@
+// --- START OF FILE main.go ---
+
 package main
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"log"
 	"os"
 
-	"cartservice/models"
 	"cartservice/store"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 )
-
-type CartLambdaEvent struct {
-	Action       string                   `json:"action"` // "AddItem", "GetCart", or "EmptyCart"
-	AddItemReq   *models.AddItemRequest   `json:"add_item_req,omitempty"`
-	GetCartReq   *models.GetCartRequest   `json:"get_cart_req,omitempty"`
-	EmptyCartReq *models.EmptyCartRequest `json:"empty_cart_req,omitempty"`
-}
 
 var cartStore store.CartStore
 
@@ -34,34 +29,61 @@ func init() {
 	}
 }
 
-func HandleRequest(ctx context.Context, event CartLambdaEvent) (interface{}, error) {
-	switch event.Action {
-	case "AddItem":
-		// Prevent crash if the request is malformed
-		if event.AddItemReq == nil || event.AddItemReq.Item == nil {
-			return nil, fmt.Errorf("invalid or missing add_item_req")
-		}
-		err := cartStore.AddItem(ctx, event.AddItemReq.UserID, event.AddItemReq.Item.ProductID, event.AddItemReq.Item.Quantity)
-		return map[string]string{"status": "success"}, err
+// Hàm Helper để trả về JSON
+func respondJSON(statusCode int, body interface{}) (events.APIGatewayV2HTTPResponse, error) {
+	b, _ := json.Marshal(body)
+	return events.APIGatewayV2HTTPResponse{
+		StatusCode: statusCode,
+		Headers:    map[string]string{"Content-Type": "application/json"},
+		Body:       string(b),
+	}, nil
+}
 
-	case "GetCart":
-		// Prevent crash if the request is malformed
-		if event.GetCartReq == nil {
-			return nil, fmt.Errorf("invalid or missing get_cart_req")
-		}
-		return cartStore.GetCart(ctx, event.GetCartReq.UserID)
+func HandleRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
+	method := req.RequestContext.HTTP.Method
+	path := req.RawPath
 
-	case "EmptyCart":
-		// Prevent crash if the request is malformed
-		if event.EmptyCartReq == nil {
-			return nil, fmt.Errorf("invalid or missing empty_cart_req")
+	if path == "/cart" {
+		// 1. LẤY GIỎ HÀNG (GET /cart?user_id=...)
+		if method == "GET" {
+			userID := req.QueryStringParameters["user_id"]
+			cart, err := cartStore.GetCart(ctx, userID)
+			if err != nil {
+				return respondJSON(500, map[string]string{"error": err.Error()})
+			}
+			return respondJSON(200, cart)
 		}
-		err := cartStore.EmptyCart(ctx, event.EmptyCartReq.UserID)
-		return map[string]string{"status": "success"}, err
 
-	default:
-		return nil, fmt.Errorf("unknown action: %s", event.Action)
+		// 2. THÊM VÀO GIỎ HÀNG (POST /cart)
+		if method == "POST" {
+			var body struct {
+				UserID    string `json:"user_id"`
+				ProductID string `json:"product_id"`
+				Quantity  int32  `json:"quantity"`
+			}
+			if err := json.Unmarshal([]byte(req.Body), &body); err != nil {
+				return respondJSON(400, map[string]string{"error": "Invalid JSON body"})
+			}
+
+			err := cartStore.AddItem(ctx, body.UserID, body.ProductID, body.Quantity)
+			if err != nil {
+				return respondJSON(500, map[string]string{"error": err.Error()})
+			}
+			return respondJSON(200, map[string]string{"status": "success"})
+		}
+
+		// 3. XÓA GIỎ HÀNG (DELETE /cart?user_id=...)
+		if method == "DELETE" {
+			userID := req.QueryStringParameters["user_id"]
+			err := cartStore.EmptyCart(ctx, userID)
+			if err != nil {
+				return respondJSON(500, map[string]string{"error": err.Error()})
+			}
+			return respondJSON(200, map[string]string{"status": "success"})
+		}
 	}
+
+	return events.APIGatewayV2HTTPResponse{StatusCode: 404, Body: "Not Found"}, nil
 }
 
 func main() {
