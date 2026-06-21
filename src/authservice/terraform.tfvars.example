@@ -1,0 +1,11 @@
+# AWS Configuration
+aws_region = "us-east-1"
+
+# Google OAuth Configuration
+# Get these from https://console.cloud.google.com/apis/credentials
+google_client_id     = "your-google-client-id.apps.googleusercontent.com"
+google_client_secret = "your-google-client-secret"
+
+# JWT Secret for signing tokens
+# Generate a strong random string (at least 32 characters)
+jwt_secret = "change-this-to-a-random-string-at-least-32-characters-long"
