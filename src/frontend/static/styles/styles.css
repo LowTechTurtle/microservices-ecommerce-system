@@ -465,7 +465,8 @@ similar to that of the hot-products-row.
   width: 100px;
 }
 
-.product-quantity-dropdown select {
+.product-quantity-dropdown select,
+.product-quantity-dropdown input {
   width: 100%;
   height: 45px;
   border: 1px solid #acacac;

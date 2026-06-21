@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -257,7 +258,7 @@ func (fe *frontendServer) placeOrderHandler(w http.ResponseWriter, r *http.Reque
 	log.Debug("placing order")
 
 	var (
-		email         = r.FormValue("email")
+		email         = getEmailFromCookie(r)
 		streetAddress = r.FormValue("street_address")
 		zipCode, _    = strconv.ParseInt(r.FormValue("zip_code"), 10, 32)
 		city          = r.FormValue("city")
@@ -457,4 +458,26 @@ func isLoggedIn(r *http.Request) bool {
 		return false
 	}
 	return true
+}
+
+func getEmailFromCookie(r *http.Request) string {
+	c, err := r.Cookie("auth_token")
+	if err != nil || c.Value == "" {
+		return ""
+	}
+	parts := strings.Split(c.Value, ".")
+	if len(parts) != 3 {
+		return ""
+	}
+	payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return ""
+	}
+	var claims struct {
+		Email string `json:"email"`
+	}
+	if err := json.Unmarshal(payloadBytes, &claims); err != nil {
+		return ""
+	}
+	return claims.Email
 }

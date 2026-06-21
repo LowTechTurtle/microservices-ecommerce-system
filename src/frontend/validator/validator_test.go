@@ -110,7 +110,7 @@ func TestAddToCartPassesValidation(t *testing.T) {
 		productID string
 	}{
 		{"valid min quantity and product id", 1, "OLJCESPC7Z"},
-		{"valid max quantity and product id", 10, "OLJCESPC7Z"},
+		{"valid max quantity and product id", 100, "OLJCESPC7Z"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -129,7 +129,7 @@ func TestAddToCartFailsValidation(t *testing.T) {
 		productID string
 	}{
 		{"invalid min quantity", 0, "OLJCESPC7Z"},
-		{"invalid max quantity", 11, "OLJCESPC7Z"},
+		{"invalid max quantity", 101, "OLJCESPC7Z"},
 		{"invalid product id", 1, ""},
 		{"invalid quantity and product id", 0, ""},
 	}
