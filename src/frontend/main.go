@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/profiler"
@@ -63,7 +64,12 @@ type frontendServer struct {
 //go:embed static/*
 var staticFS embed.FS
 
-func main() {
+var (
+	initOnce      sync.Once
+	globalHandler http.Handler
+)
+
+func initialize() {
 	godotenv.Load()
 	ctx := context.Background()
 	log := logrus.New()
@@ -103,12 +109,6 @@ func main() {
 		log.Info("Profiling disabled.")
 	}
 
-	srvPort := port
-	if os.Getenv("PORT") != "" {
-		srvPort = os.Getenv("PORT")
-	}
-	addr := os.Getenv("LISTEN_ADDR")
-
 	r := mux.NewRouter()
 	r.HandleFunc(baseUrl+"/", svc.homeHandler).Methods(http.MethodGet, http.MethodHead)
 	r.HandleFunc(baseUrl+"/product/{id}", svc.productHandler).Methods(http.MethodGet, http.MethodHead)
@@ -131,8 +131,28 @@ func main() {
 	handler = ensureSessionID(handler)                 // add session ID
 	handler = otelhttp.NewHandler(handler, "frontend") // add OTel tracing
 
-	log.Infof("starting server on %s:%s", addr, srvPort)
-	log.Fatal(http.ListenAndServe(addr+":"+srvPort, handler))
+	globalHandler = handler
+}
+
+// Handler handles all incoming HTTP requests for Vercel.
+func Handler(w http.ResponseWriter, r *http.Request) {
+	initOnce.Do(initialize)
+	globalHandler.ServeHTTP(w, r)
+}
+
+func main() {
+	initOnce.Do(initialize)
+
+	srvPort := port
+	if os.Getenv("PORT") != "" {
+		srvPort = os.Getenv("PORT")
+	}
+	addr := os.Getenv("LISTEN_ADDR")
+
+	fmt.Printf("starting local server on %s:%s\n", addr, srvPort)
+	if err := http.ListenAndServe(addr+":"+srvPort, globalHandler); err != nil {
+		panic(err)
+	}
 }
 func initStats(log logrus.FieldLogger) {
 	// TODO(arbrown) Implement OpenTelemtry stats
