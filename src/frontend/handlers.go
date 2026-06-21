@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -401,6 +402,7 @@ func injectCommonTemplateData(r *http.Request, payload map[string]interface{}) m
 		"session_id":        sessionID(r),
 		"request_id":        r.Context().Value(ctxKeyRequestID{}),
 		"user_currency":     "USD", // Fix cứng USD
+		"user_email":        getUserEmail(r),
 		"platform_css":      plat.css,
 		"platform_name":     plat.provider,
 		"is_cymbal_brand":   isCymbalBrand,
@@ -452,9 +454,36 @@ func stringinSlice(slice []string, val string) bool {
 }
 
 func isLoggedIn(r *http.Request) bool {
-	c, err := r.Cookie("auth_token")
-	if err != nil || c.Value == "" {
-		return false
+	_, err := r.Cookie("auth_token")
+	return err == nil
+}
+
+func getUserEmail(r *http.Request) string {
+	cookie, err := r.Cookie("auth_token")
+	if err != nil {
+		return ""
 	}
-	return true
+	parts := strings.Split(cookie.Value, ".")
+	if len(parts) != 3 {
+		return ""
+	}
+	
+	// Add padding if missing
+	payloadStr := parts[1]
+	if pad := len(payloadStr) % 4; pad != 0 {
+		payloadStr += strings.Repeat("=", 4-pad)
+	}
+
+	payload, err := base64.URLEncoding.DecodeString(payloadStr)
+	if err != nil {
+		return ""
+	}
+	
+	var claims map[string]interface{}
+	if err := json.Unmarshal(payload, &claims); err == nil {
+		if email, ok := claims["email"].(string); ok {
+			return email
+		}
+	}
+	return ""
 }

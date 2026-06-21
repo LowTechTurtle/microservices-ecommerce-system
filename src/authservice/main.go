@@ -8,6 +8,7 @@ import (
     "log"
     "net/http"
     "os"
+    "strings"
     "time"
 
     "github.com/aws/aws-lambda-go/events"
@@ -110,10 +111,29 @@ func HandleRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest) (eve
 }
 
 func handleGoogleLogin(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
-    state := req.QueryStringParameters["state"]
-    if state == "" {
-        state = "random-state"
+    redirectURI := req.QueryStringParameters["redirect_uri"]
+    if redirectURI == "" {
+        referer := req.Headers["referer"]
+        if referer != "" {
+            // attempt to extract origin from referer
+            parts := strings.Split(referer, "/")
+            if len(parts) >= 3 {
+                redirectURI = parts[0] + "//" + parts[2]
+            }
+        }
     }
+    if redirectURI == "" {
+        redirectURI = os.Getenv("FRONTEND_URL")
+    }
+    if redirectURI == "" {
+        redirectURI = "http://localhost:8080"
+    }
+
+    stateToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+        "origin": redirectURI,
+        "exp":    time.Now().Add(10 * time.Minute).Unix(),
+    })
+    state, _ := stateToken.SignedString([]byte(jwtSecret))
     
     url := oauth2Config.AuthCodeURL(state, oauth2.AccessTypeOffline)
     
@@ -184,9 +204,23 @@ func handleGoogleCallback(ctx context.Context, req events.APIGatewayV2HTTPReques
         return respondJSON(http.StatusInternalServerError, map[string]string{"error": "failed to generate token"})
     }
 
-    frontendURL := os.Getenv("FRONTEND_URL")
-    if frontendURL == "" {
-        frontendURL = "http://localhost:8080"
+    frontendURL := "http://localhost:8080"
+    state := req.QueryStringParameters["state"]
+    if state != "" {
+        stateToken, err := jwt.Parse(state, func(token *jwt.Token) (interface{}, error) {
+            return []byte(jwtSecret), nil
+        })
+        if err == nil && stateToken.Valid {
+            if claims, ok := stateToken.Claims.(jwt.MapClaims); ok {
+                if origin, ok := claims["origin"].(string); ok && origin != "" {
+                    frontendURL = origin
+                }
+            }
+        }
+    }
+
+    if envURL := os.Getenv("FRONTEND_URL"); envURL != "" && frontendURL == "http://localhost:8080" {
+        frontendURL = envURL
     }
 
     redirectURL := fmt.Sprintf("%s/login/callback?token=%s", frontendURL, tokenString)
