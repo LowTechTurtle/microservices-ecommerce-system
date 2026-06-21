@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.4"
+    }
   }
 }
 
@@ -34,10 +38,10 @@ resource "aws_dynamodb_table" "cart_table" {
 }
 
 # ==========================================
-# IAM ROLE FOR LAMBDA
+# IAM ROLE & POLICIES FOR LAMBDA
 # ==========================================
 
-# 1. Allow Lambda to assume this role
+# Allow Lambda to assume this role
 resource "aws_iam_role" "lambda_exec" {
   name = "cartservice_lambda_exec_role"
   assume_role_policy = jsonencode({
@@ -52,14 +56,14 @@ resource "aws_iam_role" "lambda_exec" {
   })
 }
 
-# 2. Add basic execution permissions (CloudWatch logs)
+# Add basic execution permissions (CloudWatch logs)
 resource "aws_iam_policy_attachment" "lambda_basic_execution" {
   name       = "lambda_basic_execution"
   roles      = [aws_iam_role.lambda_exec.name]
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# 3. Add DynamoDB permissions
+# Add DynamoDB permissions
 resource "aws_iam_role_policy" "lambda_dynamodb_policy" {
   name   = "cartservice_dynamodb_access"
   role   = aws_iam_role.lambda_exec.id
@@ -81,7 +85,17 @@ resource "aws_iam_role_policy" "lambda_dynamodb_policy" {
 }
 
 # ==========================================
-# AWS LAMBDA FUNCTION ($0 Idle Cost)
+# 3. PACKAGE THE COMPILED GO BINARY
+# ==========================================
+
+data "archive_file" "lambda_zip" {
+  type        = "zip"
+  source_file = "${path.module}/bootstrap"
+  output_path = "${path.module}/deployment.zip"
+}
+
+# ==========================================
+# 4. AWS LAMBDA FUNCTION ($0 Idle Cost)
 # ==========================================
 
 resource "aws_lambda_function" "cartservice" {
@@ -91,11 +105,11 @@ resource "aws_lambda_function" "cartservice" {
   # AWS strictly requires the Go binary to be named "bootstrap" for the al2023 runtime
   handler       = "bootstrap" 
   runtime       = "provided.al2023"
+  architectures = ["arm64"]
   
-  # Terraform looks for this ZIP file in your project directory
-  filename      = "deployment.zip" 
-  
-  source_code_hash = filebase64sha256("deployment.zip")
+  # Trỏ filename vào output của block archive_file ở trên
+  filename         = data.archive_file.lambda_zip.output_path 
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 
   environment {
     variables = {
@@ -105,9 +119,27 @@ resource "aws_lambda_function" "cartservice" {
 }
 
 # ==========================================
-# OUTPUTS
+# 5. LAMBDA FUNCTION URL (HTTP Endpoint)
 # ==========================================
+
+resource "aws_lambda_function_url" "cart_url" {
+  function_name      = aws_lambda_function.cartservice.function_name
+  authorization_type = "NONE"
+}
+
+resource "aws_lambda_permission" "allow_public" {
+  statement_id           = "AllowPublicFunctionUrlInvoke"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.cartservice.function_name
+  principal              = "*"
+  function_url_auth_type = "NONE"
+}
 
 output "lambda_function_name" {
   value = aws_lambda_function.cartservice.function_name
+}
+
+output "lambda_endpoint" {
+  description = "The public HTTP URL of your Serverless Cart Service"
+  value       = aws_lambda_function_url.cart_url.function_url
 }

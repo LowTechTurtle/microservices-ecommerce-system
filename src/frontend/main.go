@@ -1,0 +1,199 @@
+package main
+
+import (
+	"context"
+	"embed"
+	"fmt"
+	"io/fs"
+	"net/http"
+	"os"
+	"time"
+
+	"cloud.google.com/go/profiler"
+	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+const (
+	port            = "8080"
+	defaultCurrency = "USD"
+	cookieMaxAge    = 60 * 60 * 48
+
+	cookiePrefix    = "shop_"
+	cookieSessionID = cookiePrefix + "session-id"
+	cookieCurrency  = cookiePrefix + "currency"
+)
+
+var (
+	whitelistedCurrencies = map[string]bool{
+		"USD": true,
+		"EUR": true,
+		"CAD": true,
+		"JPY": true,
+		"GBP": true,
+		"TRY": true,
+	}
+
+	baseUrl = ""
+)
+
+type ctxKeySessionID struct{}
+
+type frontendServer struct {
+	productCatalogLambdaURL string
+	cartServiceLambdaURL    string
+	shippingLambdaURL       string
+	// checkoutServiceLambdaURL string // TODO: future migration
+	// paymentServiceLambdaURL  string // TODO: future migration
+
+	collectorAddr string
+	collectorConn *grpc.ClientConn
+}
+
+//go:embed static/*
+var staticFS embed.FS
+
+func main() {
+	godotenv.Load()
+	ctx := context.Background()
+	log := logrus.New()
+	log.Level = logrus.DebugLevel
+	log.Formatter = &logrus.JSONFormatter{
+		FieldMap: logrus.FieldMap{
+			logrus.FieldKeyTime:  "timestamp",
+			logrus.FieldKeyLevel: "severity",
+			logrus.FieldKeyMsg:   "message",
+		},
+		TimestampFormat: time.RFC3339Nano,
+	}
+	log.Out = os.Stdout
+
+	svc := new(frontendServer)
+
+	otel.SetTextMapPropagator(
+		propagation.NewCompositeTextMapPropagator(
+			propagation.TraceContext{}, propagation.Baggage{}))
+
+	baseUrl = os.Getenv("BASE_URL")
+	mustMapEnv(&svc.productCatalogLambdaURL, "PRODUCT_CATALOG_LAMBDA_URL")
+	mustMapEnv(&svc.cartServiceLambdaURL, "CARTSERVICE_LAMBDA_URL")
+	mustMapEnv(&svc.shippingLambdaURL, "SHIPPING_LAMBDA_URL")
+
+	if os.Getenv("ENABLE_TRACING") == "1" {
+		log.Info("Tracing enabled.")
+		initTracing(log, ctx, svc)
+	} else {
+		log.Info("Tracing disabled.")
+	}
+
+	if os.Getenv("ENABLE_PROFILER") == "1" {
+		log.Info("Profiling enabled.")
+		go initProfiling(log, "frontend", "1.0.0")
+	} else {
+		log.Info("Profiling disabled.")
+	}
+
+	srvPort := port
+	if os.Getenv("PORT") != "" {
+		srvPort = os.Getenv("PORT")
+	}
+	addr := os.Getenv("LISTEN_ADDR")
+
+	r := mux.NewRouter()
+	r.HandleFunc(baseUrl+"/", svc.homeHandler).Methods(http.MethodGet, http.MethodHead)
+	r.HandleFunc(baseUrl+"/product/{id}", svc.productHandler).Methods(http.MethodGet, http.MethodHead)
+	r.HandleFunc(baseUrl+"/cart", svc.viewCartHandler).Methods(http.MethodGet, http.MethodHead)
+	r.HandleFunc(baseUrl+"/cart", svc.addToCartHandler).Methods(http.MethodPost)
+	r.HandleFunc(baseUrl+"/cart/empty", svc.emptyCartHandler).Methods(http.MethodPost)
+	r.HandleFunc(baseUrl+"/logout", svc.logoutHandler).Methods(http.MethodGet)
+	r.HandleFunc(baseUrl+"/cart/checkout", svc.placeOrderHandler).Methods(http.MethodPost)
+	subFS, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		log.Fatalf("failed to load static files: %v", err)
+	}
+	r.PathPrefix(baseUrl + "/static/").Handler(http.StripPrefix(baseUrl+"/static/", http.FileServer(http.FS(subFS))))
+	r.HandleFunc(baseUrl+"/robots.txt", func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "User-agent: *\nDisallow: /") })
+	r.HandleFunc(baseUrl+"/_healthz", func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "ok") })
+	r.HandleFunc(baseUrl+"/product-meta/{ids}", svc.getProductByID).Methods(http.MethodGet)
+
+	var handler http.Handler = r
+	handler = &logHandler{log: log, next: handler}     // add logging
+	handler = ensureSessionID(handler)                 // add session ID
+	handler = otelhttp.NewHandler(handler, "frontend") // add OTel tracing
+
+	log.Infof("starting server on %s:%s", addr, srvPort)
+	log.Fatal(http.ListenAndServe(addr+":"+srvPort, handler))
+}
+func initStats(log logrus.FieldLogger) {
+	// TODO(arbrown) Implement OpenTelemtry stats
+}
+
+func initTracing(log logrus.FieldLogger, ctx context.Context, svc *frontendServer) (*sdktrace.TracerProvider, error) {
+	mustMapEnv(&svc.collectorAddr, "COLLECTOR_SERVICE_ADDR")
+	mustConnGRPC(ctx, &svc.collectorConn, svc.collectorAddr)
+	exporter, err := otlptracegrpc.New(
+		ctx,
+		otlptracegrpc.WithGRPCConn(svc.collectorConn))
+	if err != nil {
+		log.Warnf("warn: Failed to create trace exporter: %v", err)
+	}
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithSampler(sdktrace.AlwaysSample()))
+	otel.SetTracerProvider(tp)
+
+	return tp, err
+}
+
+func initProfiling(log logrus.FieldLogger, service, version string) {
+	// TODO(ahmetb) this method is duplicated in other microservices using Go
+	// since they are not sharing packages.
+	for i := 1; i <= 3; i++ {
+		log = log.WithField("retry", i)
+		if err := profiler.Start(profiler.Config{
+			Service:        service,
+			ServiceVersion: version,
+			// ProjectID must be set if not running on GCP.
+			// ProjectID: "my-project",
+		}); err != nil {
+			log.Warnf("warn: failed to start profiler: %+v", err)
+		} else {
+			log.Info("started Stackdriver profiler")
+			return
+		}
+		d := time.Second * 10 * time.Duration(i)
+		log.Debugf("sleeping %v to retry initializing Stackdriver profiler", d)
+		time.Sleep(d)
+	}
+	log.Warn("warning: could not initialize Stackdriver profiler after retrying, giving up")
+}
+
+func mustMapEnv(target *string, envKey string) {
+	v := os.Getenv(envKey)
+	if v == "" {
+		panic(fmt.Sprintf("environment variable %q not set", envKey))
+	}
+	*target = v
+}
+
+func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string) {
+	var err error
+	_, cancel := context.WithTimeout(ctx, time.Second*3)
+	defer cancel()
+	*conn, err = grpc.NewClient(addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
+	if err != nil {
+		panic(errors.Wrapf(err, "grpc: failed to connect %s", addr))
+	}
+}

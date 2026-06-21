@@ -6,3 +6,4 @@
 bootstrap
 .DS_Store
 docs/
+.env
