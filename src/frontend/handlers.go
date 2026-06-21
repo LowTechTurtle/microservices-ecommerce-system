@@ -80,11 +80,14 @@ func (fe *frontendServer) homeHandler(w http.ResponseWriter, r *http.Request) {
 	plat = platformDetails{}
 	plat.setPlatformDetails(strings.ToLower(env))
 
+	authRequired := r.URL.Query().Get("auth_required") == "true"
+
 	if err := templates.ExecuteTemplate(w, "home", injectCommonTemplateData(r, map[string]interface{}{
-		"show_currency": false, // Ẩn dropdown chọn tiền tệ trên UI
-		"products":      ps,
-		"cart_size":     cartSize(cart),
-		"banner_color":  os.Getenv("BANNER_COLOR"),
+		"show_currency":     false, // Ẩn dropdown chọn tiền tệ trên UI
+		"products":          ps,
+		"cart_size":         cartSize(cart),
+		"banner_color":      os.Getenv("BANNER_COLOR"),
+		"show_login_dialog": authRequired,
 	})); err != nil {
 		log.Error(err)
 	}
@@ -114,6 +117,12 @@ func (plat *platformDetails) setPlatformDetails(env string) {
 
 func (fe *frontendServer) productHandler(w http.ResponseWriter, r *http.Request) {
 	log := r.Context().Value(ctxKeyLog{}).(logrus.FieldLogger)
+
+	if !isLoggedIn(r) {
+		http.Redirect(w, r, baseUrl+"/?auth_required=true", http.StatusFound)
+		return
+	}
+
 	id := mux.Vars(r)["id"]
 	if id == "" {
 		renderHTTPError(log, r, w, errors.New("product id not specified"), http.StatusBadRequest)
@@ -322,8 +331,33 @@ func (fe *frontendServer) logoutHandler(w http.ResponseWriter, r *http.Request) 
 		c.MaxAge = -1
 		http.SetCookie(w, c)
 	}
+	
+	// Ensure auth_token is cleared
+	http.SetCookie(w, &http.Cookie{
+		Name:     "auth_token",
+		Value:    "",
+		Path:     "/",
+		Expires:  time.Unix(0, 0),
+		MaxAge:   -1,
+		HttpOnly: true,
+	})
+
 	w.Header().Set("Location", baseUrl+"/")
 	w.WriteHeader(http.StatusFound)
+}
+
+func (fe *frontendServer) loginCallbackHandler(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token != "" {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "auth_token",
+			Value:    token,
+			Path:     "/",
+			MaxAge:   3600 * 24, // 24 hours
+			HttpOnly: true,
+		})
+	}
+	http.Redirect(w, r, baseUrl+"/", http.StatusFound)
 }
 
 func (fe *frontendServer) getProductByID(w http.ResponseWriter, r *http.Request) {
@@ -373,6 +407,7 @@ func injectCommonTemplateData(r *http.Request, payload map[string]interface{}) m
 		"frontendMessage":   frontendMessage,
 		"currentYear":       time.Now().Year(),
 		"baseUrl":           baseUrl,
+		"is_logged_in":      isLoggedIn(r),
 	}
 
 	for k, v := range payload {
@@ -414,4 +449,12 @@ func stringinSlice(slice []string, val string) bool {
 		}
 	}
 	return false
+}
+
+func isLoggedIn(r *http.Request) bool {
+	c, err := r.Cookie("auth_token")
+	if err != nil || c.Value == "" {
+		return false
+	}
+	return true
 }

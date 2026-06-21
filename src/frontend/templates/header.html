@@ -67,6 +67,16 @@
                 <div class="controls">
 
 
+                    {{ if $.is_logged_in }}
+                        <a href="{{ $.baseUrl }}/logout" class="cart-link" style="margin-right: 15px;">
+                            <strong>Logout</strong>
+                        </a>
+                    {{ else }}
+                        <a href="#" class="cart-link" style="margin-right: 15px;" data-toggle="modal" data-target="#loginModal">
+                            <strong>Login</strong>
+                        </a>
+                    {{ end }}
+
                     <a href="{{ $.baseUrl }}/cart" class="cart-link">
                         <img src="{{ $.baseUrl }}/static/icons/Hipster_CartIcon.svg" alt="Cart icon" class="logo" title="Cart" />
                         {{ if $.cart_size }}
@@ -78,4 +88,23 @@
         </div>
 
     </header>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-labelledby="loginModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="loginModalLabel">Auth Required</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body text-center">
+            <p>Please log in to continue.</p>
+            <a href="https://u37p27xiz3dtljnncv4dt2aukm0uuhtj.lambda-url.us-east-1.on.aws/auth/google" class="btn btn-primary" style="background-color: #4285F4; border-color: #4285F4;">Login with Google</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
     {{end}}

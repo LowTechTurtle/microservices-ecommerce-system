@@ -73,4 +73,12 @@
   {{ template "footer" . }}
 </div>
 
+{{ if $.show_login_dialog }}
+<script>
+  $(document).ready(function() {
+      $('#loginModal').modal('show');
+  });
+</script>
+{{ end }}
+
 {{ end }}
