@@ -4,3 +4,5 @@
 .terraform/
 *.zip
 bootstrap
+.DS_Store
+docs/
