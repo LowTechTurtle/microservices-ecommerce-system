@@ -64,6 +64,39 @@ func main() {
 	svc := dynamodb.NewFromConfig(cfg)
 	tableName := "products"
 
+	// 2.5. Xoá toàn bộ dữ liệu cũ trong DynamoDB
+	scanOut, err := svc.Scan(context.Background(), &dynamodb.ScanInput{
+		TableName: &tableName,
+	})
+	if err != nil {
+		log.Fatalf("Không thể scan bảng DynamoDB: %v", err)
+	}
+
+	fmt.Printf("Tìm thấy %d sản phẩm cũ trong DynamoDB, đang tiến hành xóa...\n", len(scanOut.Items))
+	for _, item := range scanOut.Items {
+		var dp DynamoProduct
+		if err := attributevalue.UnmarshalMap(item, &dp); err != nil {
+			log.Printf("Lỗi unmarshal sản phẩm: %v", err)
+			continue
+		}
+
+		key, err := attributevalue.MarshalMap(map[string]string{"id": dp.ID})
+		if err != nil {
+			log.Printf("Lỗi marshal key cho sản phẩm %s: %v", dp.ID, err)
+			continue
+		}
+
+		_, err = svc.DeleteItem(context.Background(), &dynamodb.DeleteItemInput{
+			TableName: &tableName,
+			Key:       key,
+		})
+		if err != nil {
+			log.Printf("Lỗi khi xóa sản phẩm %s: %v", dp.ID, err)
+		} else {
+			fmt.Printf("Đã xóa sản phẩm cũ: %s (ID: %s)\n", dp.Name, dp.ID)
+		}
+	}
+
 	// 3. Lặp qua từng product và đẩy lên DynamoDB
 	for _, p := range wrapper.Products {
 		// Chuyển đổi sang format của DynamoDB

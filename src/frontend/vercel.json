@@ -1,15 +1,4 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "main.go",
-      "use": "@vercel/go"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "main.go"
-    }
-  ]
+  "buildCommand": "go build -o $VERCEL_OUTPUT_FILE ."
 }

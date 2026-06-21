@@ -1,133 +1,229 @@
 {
-    "products": [
-        {
-            "id": "OLJCESPC7Z",
-            "name": "Sunglasses",
-            "description": "Add a modern touch to your outfits with these sleek aviator sunglasses.",
-            "picture": "/static/img/products/sunglasses.jpg",
-            "priceUsd": {
-                "currencyCode": "USD",
-                "units": 19,
-                "nanos": 990000000
-            },
-            "categories": [
-                "accessories"
-            ]
-        },
-        {
-            "id": "66VCHSJNUP",
-            "name": "Tank Top",
-            "description": "Perfectly cropped cotton tank, with a scooped neckline.",
-            "picture": "/static/img/products/tank-top.jpg",
-            "priceUsd": {
-                "currencyCode": "USD",
-                "units": 18,
-                "nanos": 990000000
-            },
-            "categories": [
-                "clothing",
-                "tops"
-            ]
-        },
-        {
-            "id": "1YMWWN1N4O",
-            "name": "Watch",
-            "description": "This gold-tone stainless steel watch will work with most of your outfits.",
-            "picture": "/static/img/products/watch.jpg",
-            "priceUsd": {
-                "currencyCode": "USD",
-                "units": 109,
-                "nanos": 990000000
-            },
-            "categories": [
-                "accessories"
-            ]
-        },
-        {
-            "id": "L9ECAV7KIM",
-            "name": "Loafers",
-            "description": "A neat addition to your summer wardrobe.",
-            "picture": "/static/img/products/loafers.jpg",
-            "priceUsd": {
-                "currencyCode": "USD",
-                "units": 89,
-                "nanos": 990000000
-            },
-            "categories": [
-                "footwear"
-            ]
-        },
-        {
-            "id": "2ZYFJ3GM2N",
-            "name": "Hairdryer",
-            "description": "This lightweight hairdryer has 3 heat and speed settings. It's perfect for travel.",
-            "picture": "/static/img/products/hairdryer.jpg",
-            "priceUsd": {
-                "currencyCode": "USD",
-                "units": 24,
-                "nanos": 990000000
-            },
-            "categories": [
-                "hair",
-                "beauty"
-            ]
-        },
-        {
-            "id": "0PUK6V6EV0",
-            "name": "Candle Holder",
-            "description": "This small but intricate candle holder is an excellent gift.",
-            "picture": "/static/img/products/candle-holder.jpg",
-            "priceUsd": {
-                "currencyCode": "USD",
-                "units": 18,
-                "nanos": 990000000
-            },
-            "categories": [
-                "decor",
-                "home"
-            ]
-        },
-        {
-            "id": "LS4PSXUNUM",
-            "name": "Salt & Pepper Shakers",
-            "description": "Add some flavor to your kitchen.",
-            "picture": "/static/img/products/salt-and-pepper-shakers.jpg",
-            "priceUsd": {
-                "currencyCode": "USD",
-                "units": 18,
-                "nanos": 490000000
-            },
-            "categories": [
-                "kitchen"
-            ]
-        },
-        {
-            "id": "9SIQT8TOJO",
-            "name": "Bamboo Glass Jar",
-            "description": "This bamboo glass jar can hold 57 oz (1.7 l) and is perfect for any kitchen.",
-            "picture": "/static/img/products/bamboo-glass-jar.jpg",
-            "priceUsd": {
-                "currencyCode": "USD",
-                "units": 5,
-                "nanos": 490000000
-            },
-            "categories": [
-                "kitchen"
-            ]
-        },
-        {
-            "id": "6E92ZMYYFZ",
-            "name": "Mug",
-            "description": "A simple mug with a mustard interior.",
-            "picture": "/static/img/products/mug.jpg",
-            "priceUsd": {
-                "currencyCode": "USD",
-                "units": 8,
-                "nanos": 990000000
-            },
-            "categories": [
-                "kitchen"
-            ]
-        }
-    ]
+  "products": [
+    {
+      "id": "C1V0A8SE9L",
+      "name": "Ceramic Vase",
+      "description": "A hand-crafted minimalist ceramic vase, perfect for dried flowers or as a standalone decor piece.",
+      "picture": "/static/img/products/ceramic-vase.png",
+      "priceUsd": {
+        "currencyCode": "USD",
+        "units": 29,
+        "nanos": 990000000
+      },
+      "categories": [
+        "decor",
+        "home"
+      ]
+    },
+    {
+      "id": "L1P0C8OV9E",
+      "name": "Linen Pillow Cover",
+      "description": "Soft, breathable linen pillow cover in a neutral tone, adding comfort and texture to your sofa or bed.",
+      "picture": "/static/img/products/linen-pillow-cover.png",
+      "priceUsd": {
+        "currencyCode": "USD",
+        "units": 19,
+        "nanos": 500000000
+      },
+      "categories": [
+        "decor",
+        "home"
+      ]
+    },
+    {
+      "id": "S1C0A8ND9E",
+      "name": "Scented Candle",
+      "description": "Soy wax scented candle in a reusable glass jar, emitting a soothing lavender and wood scent.",
+      "picture": "/static/img/products/scented-candle.png",
+      "priceUsd": {
+        "currencyCode": "USD",
+        "units": 15,
+        "nanos": 990000000
+      },
+      "categories": [
+        "decor",
+        "home",
+        "beauty"
+      ]
+    },
+    {
+      "id": "W1O0D8OR9G",
+      "name": "Wooden Desk Organizer",
+      "description": "Sleek oak wood desk organizer to keep your pens, notebook, and phone neatly arranged.",
+      "picture": "/static/img/products/wooden-desk-organizer.png",
+      "priceUsd": {
+        "currencyCode": "USD",
+        "units": 34,
+        "nanos": 990000000
+      },
+      "categories": [
+        "home",
+        "office"
+      ]
+    },
+    {
+      "id": "L1K0E8YC9H",
+      "name": "Leather Keychain",
+      "description": "Durable full-grain leather keychain with a brass clasp, aging beautifully over time.",
+      "picture": "/static/img/products/leather-keychain.png",
+      "priceUsd": {
+        "currencyCode": "USD",
+        "units": 12,
+        "nanos": 500000000
+      },
+      "categories": [
+        "accessories"
+      ]
+    },
+    {
+      "id": "C1T0B8AG9E",
+      "name": "Canvas Tote Bag",
+      "description": "Heavyweight organic canvas tote bag with reinforced handles, perfect for daily errands.",
+      "picture": "/static/img/products/canvas-tote-bag.png",
+      "priceUsd": {
+        "currencyCode": "USD",
+        "units": 22,
+        "nanos": 0
+      },
+      "categories": [
+        "accessories",
+        "clothing"
+      ]
+    },
+    {
+      "id": "M1W0A8LL9E",
+      "name": "Minimalist Wallet",
+      "description": "Slim leather card holder wallet, designed to fit front pockets comfortably.",
+      "picture": "/static/img/products/minimalist-wallet.png",
+      "priceUsd": {
+        "currencyCode": "USD",
+        "units": 45,
+        "nanos": 0
+      },
+      "categories": [
+        "accessories"
+      ]
+    },
+    {
+      "id": "B1D0L8AM9P",
+      "name": "Brass Desk Lamp",
+      "description": "Modern brass desk lamp with an adjustable neck, providing warm, direct lighting for work.",
+      "picture": "/static/img/products/brass-desk-lamp.png",
+      "priceUsd": {
+        "currencyCode": "USD",
+        "units": 79,
+        "nanos": 990000000
+      },
+      "categories": [
+        "decor",
+        "home",
+        "office"
+      ]
+    },
+    {
+      "id": "C1M0U8GG9S",
+      "name": "Ceramic Mug",
+      "description": "Matte ceramic mug with an ergonomic handle, perfect for your morning coffee or tea.",
+      "picture": "/static/img/products/ceramic-mug.png",
+      "priceUsd": {
+        "currencyCode": "USD",
+        "units": 14,
+        "nanos": 990000000
+      },
+      "categories": [
+        "kitchen",
+        "home"
+      ]
+    },
+    {
+      "id": "G1W0B8OT9L",
+      "name": "Glass Water Bottle",
+      "description": "Reusable borosilicate glass water bottle with a protective silicone sleeve and bamboo lid.",
+      "picture": "/static/img/products/glass-water-bottle.png",
+      "priceUsd": {
+        "currencyCode": "USD",
+        "units": 24,
+        "nanos": 500000000
+      },
+      "categories": [
+        "kitchen",
+        "lifestyle"
+      ]
+    },
+    {
+      "id": "L1C0O8AS9T",
+      "name": "Leather Coasters",
+      "description": "Set of 4 vegetable-tanned leather coasters, protecting your tables with style.",
+      "picture": "/static/img/products/leather-coasters.png",
+      "priceUsd": {
+        "currencyCode": "USD",
+        "units": 18,
+        "nanos": 0
+      },
+      "categories": [
+        "kitchen",
+        "home"
+      ]
+    },
+    {
+      "id": "W1T0B8LN9K",
+      "name": "Wool Throw Blanket",
+      "description": "Cozy merino wool throw blanket, perfect for keeping warm on chilly evenings.",
+      "picture": "/static/img/products/wool-throw-blanket.png",
+      "priceUsd": {
+        "currencyCode": "USD",
+        "units": 89,
+        "nanos": 990000000
+      },
+      "categories": [
+        "decor",
+        "home"
+      ]
+    },
+    {
+      "id": "S1S0K8ET9L",
+      "name": "Stainless Steel Kettle",
+      "description": "Modern stainless steel stovetop kettle with a gooseneck spout for precise pouring.",
+      "picture": "/static/img/products/stainless-steel-kettle.png",
+      "priceUsd": {
+        "currencyCode": "USD",
+        "units": 49,
+        "nanos": 990000000
+      },
+      "categories": [
+        "kitchen",
+        "home"
+      ]
+    },
+    {
+      "id": "P1B0S8PE9A",
+      "name": "Portable Bluetooth Speaker",
+      "description": "Compact waterproof Bluetooth speaker with rich sound and up to 10 hours of battery life.",
+      "picture": "/static/img/products/portable-bluetooth-speaker.png",
+      "priceUsd": {
+        "currencyCode": "USD",
+        "units": 59,
+        "nanos": 990000000
+      },
+      "categories": [
+        "electronics",
+        "lifestyle"
+      ]
+    },
+    {
+      "id": "L1J0O8UR9N",
+      "name": "Leather Journal",
+      "description": "Refillable leather-bound notebook with high-quality unlined paper, ideal for sketching or writing.",
+      "picture": "/static/img/products/leather-journal.png",
+      "priceUsd": {
+        "currencyCode": "USD",
+        "units": 28,
+        "nanos": 0
+      },
+      "categories": [
+        "office",
+        "lifestyle"
+      ]
+    }
+  ]
 }
